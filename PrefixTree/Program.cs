@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace PrefixTree
@@ -57,11 +58,6 @@ namespace PrefixTree
                     if (counter % 10_000 == 0)
                     {
                         Console.WriteLine(counter);
-                    }
-
-                    if (counter >= 100)
-                    {
-                        break;
                     }
                 }
             }
@@ -149,6 +145,11 @@ namespace PrefixTree
 
         public void Insert(string key)
         {
+            if (!CheckWordCharacters(key))
+            {
+                return;
+            }
+
             var node = _root;
 
             for (var level = 0; level < key.Length; level++)
@@ -163,6 +164,11 @@ namespace PrefixTree
             }
 
             node.IsEndOfWord = true;
+        }
+
+        private bool CheckWordCharacters(string key)
+        {
+            return !Regex.Match(key, "[^а-я,-]+").Success;
         }
 
         public bool Search(string key)
@@ -224,7 +230,8 @@ namespace PrefixTree
 
             for (var level = 0; level < start.Length; level++)
             {
-                var index = start[level] - Alphabet[0];
+                var index = Alphabet.IndexOf(start[level]);
+                //var index = start[level] - Alphabet[0];
 
                 if (node.Children[index] != null)
                 {
