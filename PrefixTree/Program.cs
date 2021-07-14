@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -11,30 +13,65 @@ namespace PrefixTree
     {
         static async Task Main(string[] args)
         {
-            var tt = new TrieTests();
-            await tt.Test();
-            Console.ReadKey();
-        }
-    }
+            var dict = new Dictionary<int, Dictionary<int, Dictionary<int, int>>>();
 
-    public class TrieTests
-    {
-        public async Task Test()
-        {
-            // Input keys (use only 'a' 
-            // through 'z' and lower case)
-            string[] keys = { "the", "a", "there", "answer", "any", "by", "bye", "their" };
+            /*
+            var dict = new Dictionary<а, Dictionary>();
+            var dict = new Dictionary<б, Dictionary>();
+            var dict = new Dictionary<в, Dictionary>();
+            var dict = new Dictionary<г, Dictionary>();
 
-            const string present = "Present in trie";
-            const string absent = "Not present in trie";
-
-            var trie = new Trie();
+             
+             
+             */
 
             var files = new string[] {
                 @"c:\LocalCode\PrefixTree\PrefixTree\bin\Debug\net5.0\wordforms\wordforms_1_54042.txt",
                 @"c:\LocalCode\PrefixTree\PrefixTree\bin\Debug\net5.0\wordforms\wordforms.txt"
             };
 
+            string ALPHABET_RU = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя-";
+            //string ALPHABET_EN = "abcdefghijklmnopqrstuvwxyz";
+
+            var trie = new Trie(ALPHABET_RU);
+            await trie.Init(files);
+
+            Console.InputEncoding = Encoding.Unicode;
+
+
+            while (true)
+            {
+                Console.WriteLine("---------------------");
+                Console.Write("Input: ");
+                var input = Console.ReadLine();
+                var suggestions = trie.SearchSuggestions(input, 10);
+                Console.WriteLine($"word quantity: {suggestions.Count()}");
+                Console.WriteLine("---------------------");
+                foreach (var word in suggestions)
+                {
+                    Console.WriteLine(word);
+                }
+            }
+        }
+    }
+
+    public class Trie
+    {
+        private readonly string Alphabet;
+
+        private readonly TrieNode _root;
+
+        public Trie(string alphabet)
+        {
+            Alphabet = alphabet;
+
+            _root = new TrieNode(Alphabet);
+        }
+
+        public async Task Init(string[] files)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
 
             var counter = 0;
             foreach (var file in files)
@@ -52,91 +89,37 @@ namespace PrefixTree
                         .Replace("`", "")
                         .Replace("\"", "");
                     //Console.WriteLine(word);
-                    trie.Insert(word);
+                    Insert(word);
                     counter++;
 
                     if (counter % 10_000 == 0)
                     {
                         Console.WriteLine(counter);
                     }
+
+                    if (counter >= 10_000)
+                    {
+                        break;
+                    }
                 }
             }
 
-
-            // Construct trie
-            //for (var i = 0; i < keys.Length; i++)
-            //    trie.Insert(keys[i]);
-
-            // Search for different keys
-            //if (trie.Search("the"))
-            //    Console.WriteLine("the --- " + present);
-            //else Console.WriteLine("the --- " + absent);
-
-            //if (trie.Search("these"))
-            //    Console.WriteLine("these --- " + present);
-            //else Console.WriteLine("these --- " + absent);
-
-            //if (trie.Search("their"))
-            //    Console.WriteLine("their --- " + present);
-            //else Console.WriteLine("their --- " + absent);
-
-            //if (trie.Search("thaw"))
-            //    Console.WriteLine("thaw --- " + present);
-            //else Console.WriteLine("thaw --- " + absent);
-
-            var words = trie.GetWords();
-            foreach (var word in words)
-            {
-                Console.WriteLine(word);
-            }
-
-            Console.WriteLine("-------абажу-------");
-            foreach (var word in trie.SearchSuggestions("абажу", 10))
-            {
-                Console.WriteLine(word);
-            }
-
-            //Console.WriteLine("-------a-------");
-            //foreach (var word in trie.SearchSuggestions("a", 20))
-            //{
-            //    Console.WriteLine(word);
-            //}
-
-            //Console.WriteLine("-------b-------");
-            //foreach (var word in trie.SearchSuggestions("b", 20))
-            //{
-            //    Console.WriteLine(word);
-            //}
+            Console.WriteLine($"Elapsed: {sw.Elapsed}");
 
             await Task.CompletedTask;
         }
-    }
 
-    public class Trie
-    {
-        private const string ALPHABET_RU = "абвгдеёжзийклмнопрстуфхцчшщъыьэюя-";
-        private const string ALPHABET_EN = "abcdefghijklmnopqrstuvwxyz";
-
-        private static readonly string Alphabet = ALPHABET_RU;
-        private static readonly int ALPHABET_SIZE = Alphabet.Length;
-
-        private readonly TrieNode _root;
-
-        public Trie()
-        {
-            _root = new TrieNode();
-        }
 
         private class TrieNode
         {
-            public readonly TrieNode[] Children = new TrieNode[ALPHABET_SIZE];
-
+            public readonly TrieNode[] Children;
             public bool IsEndOfWord;
 
-            public TrieNode()
+            public TrieNode(string alphabet)
             {
+                Children = new TrieNode[alphabet.Length];
                 IsEndOfWord = false;
-                for (var i = 0; i < ALPHABET_SIZE; i++)
+                for (var i = 0; i < alphabet.Length; i++)
                 {
                     Children[i] = null;
                 }
@@ -158,7 +141,7 @@ namespace PrefixTree
                 //var index = key[level] - Alphabet[0];
                 //Console.WriteLine((int)key[level]);
                 //Console.WriteLine((int)Alphabet[0]);
-                node.Children[index] ??= new TrieNode();
+                node.Children[index] ??= new TrieNode(Alphabet);
 
                 node = node.Children[index];
             }
@@ -209,7 +192,7 @@ namespace PrefixTree
                 words.Add(str);
             }
 
-            for (var i = 0; i < ALPHABET_SIZE; i++)
+            for (var i = 0; i < Alphabet.Length; i++)
             {
                 if (node.Children[i] != null)
                 {
@@ -224,18 +207,22 @@ namespace PrefixTree
         public IEnumerable<string> SearchSuggestions(string start, int quantity = 0)
         {
             var suggestions = new List<string>();
-            if (start == null) return suggestions;
+            if (string.IsNullOrEmpty(start)) return suggestions;
 
             var node = _root;
 
             for (var level = 0; level < start.Length; level++)
             {
                 var index = Alphabet.IndexOf(start[level]);
-                //var index = start[level] - Alphabet[0];
+                if (index == -1) return suggestions;
 
                 if (node.Children[index] != null)
                 {
                     node = node.Children[index];
+                }
+                else
+                {
+                    return suggestions;
                 }
             }
 
