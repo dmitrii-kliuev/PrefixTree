@@ -11,14 +11,13 @@ namespace PrefixTree.Trie
     public class TrieWithDictionaries : ITrie
     {
         private readonly string Alphabet;
-
-        private readonly Dictionary<int, TrieNode> _root;
+        private readonly SortedDictionary<int, TrieNode> _root;
 
         public TrieWithDictionaries(string alphabet)
         {
             Alphabet = alphabet;
 
-            _root = new Dictionary<int, TrieNode>();
+            _root = new SortedDictionary<int, TrieNode>();
         }
 
         public async Task Init(string[] files)
@@ -49,10 +48,10 @@ namespace PrefixTree.Trie
                         Console.WriteLine(counter);
                     }
 
-                    //if (counter >= 1_000)
-                    //{
-                    //    break;
-                    //}
+                    if (counter >= 1_000)
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -63,13 +62,13 @@ namespace PrefixTree.Trie
 
         private class TrieNode
         {
-            public readonly Dictionary<int, TrieNode> Children;
+            public readonly SortedDictionary<int, TrieNode> Children;
 
             public bool IsEndOfWord;
 
             public TrieNode()
             {
-                Children = new Dictionary<int, TrieNode>();
+                Children = new SortedDictionary<int, TrieNode>();
                 IsEndOfWord = false;
             }
         }
@@ -136,7 +135,7 @@ namespace PrefixTree.Trie
             return words;
         }
 
-        void GetWords(Dictionary<int, TrieNode> node, bool isEndOfWord, string str, ICollection<string> words, int quantity = 0)
+        void GetWords(SortedDictionary<int, TrieNode> node, bool isEndOfWord, string str, ICollection<string> words, int quantity = 0)
         {
             if (quantity != 0 && words.Count == quantity) return;
 
